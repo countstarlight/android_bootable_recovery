@@ -336,6 +336,7 @@ LOCAL_ADDITIONAL_DEPENDENCIES := \
     fsck.fat \
     fatlabel \
     mkfs.fat \
+    libaed.so \
     permissive.sh \
     simg2img_twrp
 
