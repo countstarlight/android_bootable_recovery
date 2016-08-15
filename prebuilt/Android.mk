@@ -26,7 +26,7 @@ else
                 RELINK_SOURCE_FILES += $(TARGET_OUT_OPTIONAL_EXECUTABLES)/zip
 	    endif
 	    ifneq ($(wildcard external/unzip/Android.mk),)
-                RELINK_SOURCE_FILES += $(TARGET_OUT_OPTIONAL_EXECUTABLES)/unzip
+                RELINK_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/sbin/unzip
 	    endif
 	endif
 endif
@@ -246,6 +246,15 @@ LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
 LOCAL_SRC_FILES := $(LOCAL_MODULE)
 include $(BUILD_PREBUILT)
 RELINK_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/sbin/libaed.so
+
+#unzip
+include $(CLEAR_VARS)
+LOCAL_MODULE := unzip
+LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
+LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
+LOCAL_SRC_FILES := $(LOCAL_MODULE)
+include $(BUILD_PREBUILT)
 
 #permissive.sh
 include $(CLEAR_VARS)
