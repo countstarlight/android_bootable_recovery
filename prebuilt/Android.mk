@@ -16,7 +16,11 @@ RELINK_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/sbin/flash_image
 RELINK_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/sbin/erase_image
 RELINK_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/sbin/bu
 ifneq ($(TW_USE_TOOLBOX), true)
-	RELINK_SOURCE_FILES += $(TARGET_OUT_OPTIONAL_EXECUTABLES)/busybox
+	ifneq ($(wildcard external/busybox/Android.mk),)
+		RELINK_SOURCE_FILES += $(TARGET_OUT_OPTIONAL_EXECUTABLES)/busybox
+	else
+		RELINK_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/sbin/busybox
+	endif
 else
 	RELINK_SOURCE_FILES += $(TARGET_OUT_EXECUTABLES)/sh
 	RELINK_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libcrypto.so
@@ -26,7 +30,7 @@ else
                 RELINK_SOURCE_FILES += $(TARGET_OUT_OPTIONAL_EXECUTABLES)/zip
 	    endif
 	    ifneq ($(wildcard external/unzip/Android.mk),)
-                RELINK_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/sbin/unzip
+                RELINK_SOURCE_FILES += $(TARGET_OUT_OPTIONAL_EXECUTABLES)/unzip
 	    endif
 	endif
 endif
@@ -177,11 +181,9 @@ ifneq ($(TW_EXCLUDE_ENCRYPTED_BACKUPS), true)
     RELINK_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libopenaes.so
 endif
 ifeq ($(TARGET_USERIMAGES_USE_F2FS), true)
-    ifeq ($(shell test $(CM_PLATFORM_SDK_VERSION) -ge 4; echo $$?),0)
+    ifneq (,$(filter $(PLATFORM_SDK_VERSION), 23))
         RELINK_SOURCE_FILES += $(TARGET_OUT_EXECUTABLES)/mkfs.f2fs
         RELINK_SOURCE_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libf2fs.so
-    else ifneq (,$(filter $(PLATFORM_SDK_VERSION), 23))
-        RELINK_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/sbin/mkfs.f2fs
     else ifneq (,$(filter $(PLATFORM_SDK_VERSION), 21 22))
         RELINK_SOURCE_FILES += $(TARGET_ROOT_OUT_SBIN)/mkfs.f2fs
     else
@@ -246,15 +248,6 @@ LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
 LOCAL_SRC_FILES := $(LOCAL_MODULE)
 include $(BUILD_PREBUILT)
 RELINK_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/sbin/libaed.so
-
-#unzip
-include $(CLEAR_VARS)
-LOCAL_MODULE := unzip
-LOCAL_MODULE_TAGS := eng
-LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
-LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
-LOCAL_SRC_FILES := $(LOCAL_MODULE)
-include $(BUILD_PREBUILT)
 
 #permissive.sh
 include $(CLEAR_VARS)
@@ -487,4 +480,31 @@ ifneq ($(TW_EXCLUDE_SUPERSU), true)
 	LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/supersu
 	LOCAL_SRC_FILES := $(LOCAL_MODULE)
 	include $(BUILD_PREBUILT)
+endif
+# for prebuilt busybox
+ifneq ($(TW_USE_TOOLBOX), true)
+ifeq ($(wildcard external/busybox/Android.mk),)
+ifneq ($(filter arm arm64, $(TARGET_ARCH)),)
+	#busybox for arm platform
+	include $(CLEAR_VARS)
+	LOCAL_MODULE := busyboxarm
+	LOCAL_MODULE_STEM := busybox
+	LOCAL_MODULE_TAGS := eng
+	LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
+	LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
+	LOCAL_SRC_FILES := busybox_arm
+	include $(BUILD_PREBUILT)
+endif
+ifneq ($(filter x86 x86_64, $(TARGET_ARCH)),)
+	#busybox for intel x86 platform
+	include $(CLEAR_VARS)
+	LOCAL_MODULE := busybox_x86
+	LOCAL_MODULE_STEM := busybox
+	LOCAL_MODULE_TAGS := eng
+	LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
+	LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
+	LOCAL_SRC_FILES := busybox_x86
+	include $(BUILD_PREBUILT)
+endif
+endif
 endif

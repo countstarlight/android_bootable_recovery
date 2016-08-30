@@ -132,6 +132,9 @@ ifeq ($(TW_OEM_BUILD),true)
     TW_EXCLUDE_SUPERSU := true
     TW_EXCLUDE_MTP := true
 endif
+ifeq ($(shell test $(PLATFORM_SDK_VERSION) -gt 22; echo $$?),0)
+    TW_USE_TOOLBOX ?= true
+endif
 ifeq ($(TARGET_USERIMAGES_USE_EXT4), true)
     LOCAL_CFLAGS += -DUSE_EXT4
     LOCAL_C_INCLUDES += system/extras/ext4_utils
@@ -337,7 +340,6 @@ LOCAL_ADDITIONAL_DEPENDENCIES := \
     fatlabel \
     mkfs.fat \
     libaed.so \
-    unzip \
     permissive.sh \
     simg2img_twrp
 
@@ -351,10 +353,16 @@ else
     LOCAL_LDFLAGS += -Wl,-dynamic-linker,/sbin/linker64
 endif
 ifneq ($(TW_USE_TOOLBOX), true)
+	ifneq ($(filter arm arm64, $(TARGET_ARCH)),)
+		LOCAL_ADDITIONAL_DEPENDENCIES += busyboxarm
+	endif
+	ifneq ($(filter x86 x86_64, $(TARGET_ARCH)),)
+		LOCAL_ADDITIONAL_DEPENDENCIES += busybox_x86
+	endif
     LOCAL_ADDITIONAL_DEPENDENCIES += busybox_symlinks
 else
     ifneq ($(wildcard external/toybox/Android.mk),)
-        LOCAL_ADDITIONAL_DEPENDENCIES += toybox_symlinks
+        LOCAL_ADDITIONAL_DEPENDENCIES += toybox_recovery
     endif
     ifneq ($(wildcard external/zip/Android.mk),)
         LOCAL_ADDITIONAL_DEPENDENCIES += zip
@@ -449,7 +457,12 @@ include $(BUILD_EXECUTABLE)
 ifneq ($(TW_USE_TOOLBOX), true)
 include $(CLEAR_VARS)
 # Create busybox symlinks... gzip and gunzip are excluded because those need to link to pigz instead
-BUSYBOX_LINKS := $(shell cat external/busybox/busybox-full.links)
+# test external/busybox/Android.mk it's exists otherwise we use busybox-full.links from prebuilt/
+ifneq ($(wildcard external/busybox/Android.mk),)
+	BUSYBOX_LINKS := $(shell cat external/busybox/busybox-full.links)
+else
+	BUSYBOX_LINKS := $(shell cat $(LOCAL_PATH)/prebuilt/busybox-full.links)
+endif
 exclude := tune2fs mke2fs mkdosfs mkfs.vfat gzip gunzip
 
 # Having /sbin/modprobe present on 32 bit devices with can cause a massive
